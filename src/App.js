@@ -1,50 +1,56 @@
-import React, { Component } from "react"
-import logo from "./logo.svg"
-import "./App.css"
+import React, { useEffect } from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-class LambdaDemo extends Component {
-  constructor(props) {
-    super(props)
-    this.state = { loading: false, msg: null }
-  }
+import Game from "./components/Game";
+import Login from "./components/Login";
+import Signup from "./components/Signup";
 
-  handleClick = api => e => {
-    e.preventDefault()
+import { useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 
-    this.setState({ loading: true })
-    fetch("/.netlify/functions/" + api)
-      .then(response => response.json())
-      .then(json => this.setState({ loading: false, msg: json.msg }))
-  }
+import "./App.css";
 
-  render() {
-    const { loading, msg } = this.state
+function App() {
+  const loginState = useSelector((state) => state.authState.userLoggedIn)
 
-    return (
-      <p>
-        <button onClick={this.handleClick("hello")}>{loading ? "Loading..." : "Call Lambda"}</button>
-        <button onClick={this.handleClick("async-dadjoke")}>{loading ? "Loading..." : "Call Async Lambda"}</button>
-        <br />
-        <span>{msg}</span>
-      </p>
-    )
-  }
+  const dispatch = useDispatch()
+
+  useEffect(() => {
+    let checkLogin = async function () {
+      let checkLogin = await fetch("https://gameback-end.herokuapp.com", {
+        method: "GET",
+        credentials: "include",
+      })
+
+      let result = await checkLogin.json()
+
+      console.log(result)
+      if(result.login) {
+        
+        dispatch({ type: 'USER_LOGIN_TRUE'})
+      } else {
+        dispatch({ type: 'USER_LOGIN_FALSE'})
+      }
+    }
+
+    checkLogin()
+  }, [])
+
+  return (
+    <div>
+      {
+        loginState !== null &&
+
+        <BrowserRouter basename={process.env.PUBLIC_URL}>
+          <Routes>
+            <Route path="/game" element={<Game />}></Route>
+            <Route path="/signup" element={<Signup />}></Route>
+            <Route exact path="/" element={loginState ? <Game /> : <Login />}></Route>
+          </Routes>
+        </BrowserRouter>
+      }
+    </div>
+  );
 }
 
-class App extends Component {
-  render() {
-    return (
-      <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <p>
-            Edit <code>src/App.js</code> and save to reload.
-          </p>
-          <LambdaDemo />
-        </header>
-      </div>
-    )
-  }
-}
-
-export default App
+export default App;
